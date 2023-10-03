@@ -44,13 +44,15 @@ namespace dynamixel
         return result;
     }
 
-    uint8_t checkConnections(std::vector<uint8_t> *out, uint8_t max_servo_count)
+    uint8_t findConnections(std::vector<uint8_t> *out, uint8_t max_servo_count)
     {
         bool result{0};
         uint16_t model_number{0};
         const char *log{nullptr};
         uint8_t s_count{0};
         uint8_t last_succ_id{0};
+        if (out)
+            out->clear();
         for (uint8_t d_id = 0; d_id < 255; d_id++)
         {
             if (s_count >= max_servo_count)
@@ -77,6 +79,45 @@ namespace dynamixel
                     out->push_back(d_id);
                 s_count++;
                 last_succ_id = d_id;
+            }
+            osDelay(10);
+        }
+        if (s_count)
+        {
+            dxl.ping(last_succ_id, &model_number);
+        }
+        return s_count;
+    }
+
+    uint8_t checkConnections(const std::vector<uint8_t> &ids)
+    {
+        bool result{0};
+        uint16_t model_number{0};
+        const char *log{nullptr};
+        uint8_t s_count{0};
+        uint8_t last_succ_id{0};
+        for (uint8_t d_id = 0; d_id < ids.size(); d_id++)
+        {
+            result = dxl.ping(ids[d_id], &model_number, &log);
+            if (result == false)
+            {
+                // SERIAL_BEGIN
+                // SERIAL_OUT("Failed to ping:\t");
+                // SERIAL_OUT_L(log);
+                // SERIAL_END
+            }
+            else
+            {
+                SERIAL_BEGIN
+                SERIAL_OUT("Succeeded to ping:\t");
+                SERIAL_OUT("id : ");
+                SERIAL_OUT(ids[d_id]);
+                SERIAL_OUT("\tmodel_number : ");
+                SERIAL_OUT_L(model_number);
+                SERIAL_END
+
+                s_count++;
+                last_succ_id = ids[d_id];
             }
             osDelay(10);
         }
@@ -125,31 +166,41 @@ namespace dynamixel
         return succ_count;
     };
 
-    uint8_t syncWrite(const std::vector<uint8_t> &ids, const std::vector<int32_t> &data, SyncWriteParamType paramType)
+    uint8_t syncWrite(const uint8_t *ids, const int32_t *data, uint8_t count, SyncWriteParamType paramType)
     {
-        if (data.size() < ids.size())
-            return 1;
         const char *log;
-        auto r = dxl.syncWrite(paramType, (uint8_t *)ids.data(), ids.size(), (int32_t *)data.data(), 1, &log);
+        auto r = dxl.syncWrite(paramType, (uint8_t *)ids, count, (int32_t *)data, 1, &log);
         SERIAL_OUT_L_THRSAFE(log);
         return !r;
     }
 
-    uint8_t syncReadPosition(const std::vector<uint8_t> &ids, std::vector<int32_t> &out)
+    uint8_t syncWrite(const std::vector<uint8_t> &ids, const std::vector<int32_t> &data, SyncWriteParamType paramType)
+    {
+        if (data.size() < ids.size())
+            return 1;
+        return syncWrite(ids.data(), data.data(), ids.size(), paramType);
+    }
+
+    uint8_t syncReadPosition(const uint8_t *ids, int32_t *out, uint8_t count)
     {
         const char *log{nullptr};
         bool result{false};
-        out.resize(ids.size());
-        for (uint8_t i = 0; i < ids.size(); i++)
+        uint8_t ret{0};
+        for (uint8_t i = 0; i < count; i++)
         {
-            result = dxl.getPresentPositionData(ids[i], &out[i], &log);
-            if (!result)
-            {
+            result = dxl.getPresentPositionData(ids[i], out + i, &log);
+            if (result)
+                ret++;
+            else
                 SERIAL_OUT_L_THRSAFE(log);
-            }
         }
+        return ret;
+    }
 
-        return 0;
+    uint8_t syncReadPosition(const std::vector<uint8_t> &ids, std::vector<int32_t> &out)
+    {
+        out.resize(ids.size());
+        return syncReadPosition(ids.data(), out.data(), ids.size());
     }
 
 };

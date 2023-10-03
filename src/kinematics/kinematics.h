@@ -22,15 +22,7 @@ namespace kinematics
         IKCONF_ALL = 0xff
     };
 
-    template <std::size_t _d_c>
-    struct limb_t
-    {
-        std::array<double, _d_c> values;
-    };
-
-    struct leg_t : public limb_t<DRIVERS_IN_LEG_COUNT>
-    {
-    };
+    using leg_t = std::array<double, LEG_DRIVERS_COUNT>;
 
     struct pos_t
     {
@@ -39,7 +31,7 @@ namespace kinematics
         pos_t(double _x = 0, double _y = 0, double _z = 0, double _a = 0, double _b = 0, double _g = 0) : x(_x), y(_y), z(_z), a(_a), b(_b), g(_g) {}
     };
 
-    CalculationResult legIK(const struct pos_t &, struct leg_t *, IKCalcConfig config = IKCalcConfig::IKCONF_ALL);
+    CalculationResult legIK(const struct pos_t &, leg_t *, IKCalcConfig config = IKCalcConfig::IKCONF_ALL);
     CalculationResult legFK(/*some args*/);
     // {
     //     Serial.println("in");

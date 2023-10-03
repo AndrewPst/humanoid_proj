@@ -1,9 +1,54 @@
 #pragma once
 
+#include <math.h>
+#include <Arduino.h>
+
 static const double COXA_Z = 74;
 static const double COXA_X = 14;
 static const double FEMUR_Z = 74;
 static const double TIBIA = 32;
 
-static const uint8_t DRIVERS_IN_LEG_COUNT = 5;
-static const uint8_t LEG_DOF_COUNT = 6;
+#define LEG_DRIVERS_COUNT 6
+#define LEG_DOF_COUNT 6
+#define HAND_DRIVERS_COUNT 3
+
+#define LEG_MIN_ANGLE_0_SERVO -M_PI / 3.0
+#define LEG_MAX_ANGLE_0_SERVO M_PI / 3.0
+#define LEG_OFFSET_ANGLE_0_SERVO M_PI_4
+
+#define LEG_MIN_ANGLE_1_SERVO -M_PI_4
+#define LEG_MAX_ANGLE_1_SERVO M_PI_4
+#define LEG_OFFSET_ANGLE_1_SERVO 0
+
+#define LEG_MIN_ANGLE_2_SERVO -20 * DEG_TO_RAD
+#define LEG_MAX_ANGLE_2_SERVO 3 * M_PI_4
+#define LEG_OFFSET_ANGLE_2_SERVO 0
+
+#define LEG_MIN_ANGLE_3_SERVO 0
+#define LEG_MAX_ANGLE_3_SERVO 3 * M_PI_4
+#define LEG_OFFSET_ANGLE_3_SERVO 0
+
+#define LEG_MIN_ANGLE_4_SERVO -M_PI_2
+#define LEG_MAX_ANGLE_4_SERVO M_PI / 6.0
+#define LEG_OFFSET_ANGLE_4_SERVO 0
+
+#define LEG_MIN_ANGLE_5_SERVO -50 * DEG_TO_RAD
+#define LEG_MAX_ANGLE_5_SERVO 50 * DEG_TO_RAD
+#define LEG_OFFSET_ANGLE_5_SERVO 0
+
+#define LEG_LEFT_0_DRIVER_ID 8
+#define LEG_LEFT_1_DRIVER_ID 10
+#define LEG_LEFT_2_DRIVER_ID 12
+#define LEG_LEFT_3_DRIVER_ID 14
+#define LEG_LEFT_4_DRIVER_ID 16
+#define LEG_LEFT_5_DRIVER_ID 18
+
+#define LEG_RIGHT_0_DRIVER_ID 7
+#define LEG_RIGHT_1_DRIVER_ID 9
+#define LEG_RIGHT_2_DRIVER_ID 11
+#define LEG_RIGHT_3_DRIVER_ID 13
+#define LEG_RIGHT_4_DRIVER_ID 15
+#define LEG_RIGHT_5_DRIVER_ID 17
+
+#define LEG_LEFT_SERVO_IDS 8, 10, 12, 14, 16, 18
+#define LEG_RIGHT_SERVO_IDS 7, 9, 11, 13, 15, 17
