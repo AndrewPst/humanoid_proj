@@ -10,7 +10,7 @@ static const double TIBIA = 32;
 
 #define LEG_DRIVERS_COUNT 6
 #define LEG_DOF_COUNT 6
-#define HAND_DRIVERS_COUNT 3
+#define HAND_DRIVERS_COUNT 0
 
 #define LEG_MIN_ANGLE_0_SERVO -M_PI / 3.0
 #define LEG_MAX_ANGLE_0_SERVO M_PI / 3.0

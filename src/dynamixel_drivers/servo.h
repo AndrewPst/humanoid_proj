@@ -49,10 +49,13 @@ namespace dynamixel
 
     uint8_t setupDrivers(const std::vector<uint8_t> &, int32_t, int32_t);
 
-    uint8_t syncReadPosition(const uint8_t* ids, int32_t* out, uint8_t count);
+    uint8_t syncReadPosition(const uint8_t *ids, int32_t *out, uint8_t count);
     uint8_t syncReadPosition(const std::vector<uint8_t> &ids, std::vector<int32_t> &out); // Very slow function with use the Dynamixex protocol 1.0
 
     uint8_t syncWrite(const std::vector<uint8_t> &ids, const std::vector<int32_t> &data, SyncWriteParamType paramType);
 
     uint8_t syncWrite(const uint8_t *ids, const int32_t *data, uint8_t count, SyncWriteParamType paramType);
+
+    uint8_t rad_to_value_arr(const double *in, int32_t *out, uint8_t count, const double *offsets = nullptr, int8_t offset_factor = 1);
+
 };

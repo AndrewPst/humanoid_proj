@@ -203,4 +203,14 @@ namespace dynamixel
         return syncReadPosition(ids.data(), out.data(), ids.size());
     }
 
+    uint8_t rad_to_value_arr(const double *in, int32_t *out, uint8_t count, const double *offsets, int8_t offset_factor)
+    {
+        uint8_t i{0};
+        for (i = 0; i < count; ++i)
+        {
+            out[i] = RAD2VALUE(in[i] + (offsets ? offsets[i] * (double)offset_factor : 0));
+        }
+        return i;
+    }
+
 };
