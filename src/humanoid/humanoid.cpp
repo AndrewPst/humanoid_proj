@@ -166,7 +166,7 @@ namespace humanoid
         return did;
     }
 
-    int8_t get_limbs_offset_factor(LimbId limb)
+    int8_t get_limbs_factor(LimbId limb)
     {
         if (limb == LimbId::LIMB_LEG_LEFT)
             return 1;

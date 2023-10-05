@@ -178,9 +178,9 @@ void loop()
         dynamixel::syncWrite(humanoid::drivers_id_buffer().data(), humanoid::velocity_buffer().data(), SERVO_COUNT, dynamixel::SyncWriteParamType::SYNCWRITE_VELOCITY);
 
         std::vector<int32_t> new_values(LEG_DRIVERS_COUNT, 0);
-        dynamixel::rad_to_value_arr(_out_left.data(), new_values.data(), new_values.size(), humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_LEG_LEFT), humanoid::get_limbs_offset_factor(humanoid::LimbId::LIMB_LEG_LEFT));
+        dynamixel::rad_to_value_arr(_out_left.data(), new_values.data(), new_values.size(), humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_LEG_LEFT), humanoid::get_limbs_factor(humanoid::LimbId::LIMB_LEG_LEFT));
         humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_LEG_LEFT, new_values);
-        dynamixel::rad_to_value_arr(_out_right.data(), new_values.data(), new_values.size(), humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_LEG_RIGHT), humanoid::get_limbs_offset_factor(humanoid::LimbId::LIMB_LEG_RIGHT));
+        dynamixel::rad_to_value_arr(_out_right.data(), new_values.data(), new_values.size(), humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_LEG_RIGHT), humanoid::get_limbs_factor(humanoid::LimbId::LIMB_LEG_RIGHT));
         humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_LEG_RIGHT, new_values);        
         
         dynamixel::syncWrite(humanoid::drivers_id_buffer().data(), humanoid::goal_pos_buffer().data(), SERVO_COUNT, dynamixel::SyncWriteParamType::SYNCWRITE_POSITION);

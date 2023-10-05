@@ -107,18 +107,18 @@ namespace kinematics
                     min *= -1;
                     max *= -1;
                 }
-                SERIAL_BEGIN
-                SERIAL_OUT("ID: ")
-                SERIAL_OUT(i)
-                SERIAL_OUT(" Calc: ")
-                SERIAL_OUT(calcbuf[i])
-                SERIAL_OUT(" min: ")
-                SERIAL_OUT(min)
-                SERIAL_OUT(" max: ")
-                SERIAL_OUT_L(max)
-                SERIAL_END
                 if (calcbuf[i] < min || calcbuf[i] > max)
                 {
+                    SERIAL_BEGIN
+                    SERIAL_OUT("ID: ")
+                    SERIAL_OUT(i)
+                    SERIAL_OUT(" Calc: ")
+                    SERIAL_OUT(calcbuf[i])
+                    SERIAL_OUT(" min: ")
+                    SERIAL_OUT(min)
+                    SERIAL_OUT(" max: ")
+                    SERIAL_OUT_L(max)
+                    SERIAL_END
                     return CalculationResult::CALC_ANGLE_RANGE_EXCEEDED;
                 }
             }
@@ -127,8 +127,10 @@ namespace kinematics
         return CalculationResult::CALC_SUCCESSFULL;
     }
 
-    CalculationResult legFK(/*some args*/)
+    CalculationResult legFK(const leg_t & in, struct pos_t *out, IKCalcConfig config)
     {
+        
+
         return CalculationResult::CALC_SUCCESSFULL;
     }
 

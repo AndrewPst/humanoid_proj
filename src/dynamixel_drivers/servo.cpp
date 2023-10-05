@@ -41,7 +41,7 @@ namespace dynamixel
         SERIAL_OUT(log);
         SERIAL_OUT_L(dxl.getProtocolVersion());
         SERIAL_END;
-        return result;
+        return !result;
     }
 
     uint8_t findConnections(std::vector<uint8_t> *out, uint8_t max_servo_count)
@@ -128,7 +128,7 @@ namespace dynamixel
         return s_count;
     }
 
-    uint8_t setupDrivers(const std::vector<uint8_t> &ids, int32_t default_velocity, int32_t default_acc)
+    uint8_t setupDrivers(const std::vector<uint8_t> &ids, int32_t default_velocity)
     {
         bool result{false};
         const char *log;
