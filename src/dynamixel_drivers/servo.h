@@ -17,7 +17,6 @@
 /// @brief functuons in this namespace exercise control over the connected servos
 namespace dynamixel
 {
-
     namespace
     {
         // private field - do not bypass namespace functions
@@ -93,12 +92,21 @@ namespace dynamixel
     uint8_t syncWrite(const uint8_t *ids, const int32_t *data, uint8_t count, SyncWriteParamType paramType);
 
     /// @brief convert everyone position in rad of servo to position in dynamixel unit
-    /// @param in angles in degrees
+    /// @param in angles in rad
     /// @param out angless in dynamixel units
+    /// @param count count of data
+    /// @param offsets offsets buffer for everyone servo (in rad)
+    /// @param offset_factor offset direction (+ || -)
+    /// @return count of converted data
+    uint8_t rad_to_value_arr(const double *in, int32_t *out, uint8_t count, const double *offsets = nullptr, int8_t offset_factor = 1);
+
+    /// @brief convert everyone position in dynamixel unit of servo to position in rad
+    /// @param in angles in dynamixel units
+    /// @param out angles in rad
     /// @param count count of data
     /// @param offsets offsets buffer for everyone servo
     /// @param offset_factor offset direction (+ || -)
     /// @return count of converted data
-    uint8_t rad_to_value_arr(const double *in, int32_t *out, uint8_t count, const double *offsets = nullptr, int8_t offset_factor = 1);
+    uint8_t value_to_rad_arr(const int32_t *in, double *out, uint8_t count, const double *offsets = nullptr, int8_t offset_factor = 1);
 
 };

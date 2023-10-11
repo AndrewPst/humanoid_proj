@@ -135,7 +135,7 @@ namespace dynamixel
         uint8_t succ_count{0};
         for (auto i : ids)
         {
-            result = dxl.jointMode(i, default_velocity, default_acc, &log);
+            result = dxl.jointMode(i, default_velocity, 0, &log);
             if (result)
             {
                 SERIAL_BEGIN;
@@ -213,4 +213,13 @@ namespace dynamixel
         return i;
     }
 
+    uint8_t value_to_rad_arr(const int32_t *in, double *out, uint8_t count, const double *offsets, int8_t offset_factor)
+    {
+        uint8_t i{0};
+        for (i = 0; i < count; ++i)
+        {
+            out[i] = VALUE2RAD(in[i]) - (offsets ? offsets[i] * (double)offset_factor : 0);
+        }
+        return i;
+    }
 };

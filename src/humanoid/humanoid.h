@@ -19,6 +19,10 @@ namespace humanoid
     {
         LIMB_LEG_LEFT = 0,
         LIMB_LEG_RIGHT = 1,
+        LIMB_HAND_LEFT = 2,
+        LIMB_HAND_RIGHT = 3,
+        LIMB_HEAD = 4,
+        LIMB_COUNT,
         LIMB_UNDEFINED = 255,
     };
 
