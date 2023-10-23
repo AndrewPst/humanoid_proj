@@ -3,8 +3,11 @@
 
 #include "src/kinematics/kinematics.h"
 #include "sout.h"
-#include "src/dynamixel_drivers/servo.h"
+#include "src/dynamixel_drivers/dynamixel.h"
 #include "src/humanoid/humanoid.h"
+#include "src/lidar/lidar.h"
+#include "src/camera/camera.h"
+#include "src/orientation/orientation.h"
 
 #include <vector>
 
@@ -20,6 +23,8 @@ enum InitResult : uint8_t
     INIT_RIGHT_HAND_ERROR_PING,
     INIT_SETUP_DRIVERS_ERROR,
     INIT_DYNAMIXEL_DRIVER_ERROR,
+    INIT_CAMERA_NOT_FOUND_ERROR,
+    INIT_ORIENT_ERROR,
 };
 
 void main_register_rtos()
@@ -36,6 +41,7 @@ void setup()
     // Register tasks
     main_register_rtos();
     humanoid::humanoid_register_rtos();
+    camera::camera_register_rtos();
     // dynamixel::dynamixel_register_rtos();
 
     // SERIAL_INIT
@@ -57,23 +63,28 @@ InitResult initsystem()
     if (dynamixel::init(dynamixel::Dynamixel_config_t()) != 0)
         return InitResult::INIT_DYNAMIXEL_DRIVER_ERROR;
 
-    const humanoid::LimbId limbs[humanoid::LIMB_COUNT]{humanoid::LIMB_LEG_LEFT, humanoid::LIMB_LEG_RIGHT, humanoid::LIMB_HAND_LEFT, humanoid::LIMB_HAND_RIGHT, humanoid::LIMB_HEAD};
+    // const humanoid::LimbId limbs[humanoid::LIMB_COUNT]{humanoid::LIMB_LEG_LEFT, humanoid::LIMB_LEG_RIGHT, humanoid::LIMB_HAND_LEFT, humanoid::LIMB_HAND_RIGHT, humanoid::LIMB_HEAD};
 
-    uint8_t drivers_count{0};
-    std::vector<uint8_t> id_buff;
-    for (uint8_t i = 0; i < humanoid::LIMB_COUNT; ++i)
-    {
-        humanoid::get_ids_of_limb(limbs[i], id_buff);
-        drivers_count = dynamixel::checkConnections(id_buff);
-        if (drivers_count != id_buff.size())
-        {
-            return static_cast<InitResult>(i + 1);
-        }
-    }
+    // uint8_t drivers_count{0};
+    // std::vector<uint8_t> id_buff;
+    // for (uint8_t i = 0; i < humanoid::LIMB_COUNT; ++i)
+    // {
+    //     humanoid::get_ids_of_limb(limbs[i], id_buff);
+    //     drivers_count = dynamixel::checkConnections(id_buff);
+    //     if (drivers_count != id_buff.size())
+    //     {
+    //         return static_cast<InitResult>(i + 1);
+    //     }
+    // }
 
-    drivers_count = dynamixel::setupDrivers(std::vector<uint8_t>(humanoid::drivers_id_buffer().begin(), humanoid::drivers_id_buffer().end()), SERVO_COUNT);
-    if (drivers_count != SERVO_COUNT)
-        return InitResult::INIT_SETUP_DRIVERS_ERROR;
+    // drivers_count = dynamixel::setupDrivers(std::vector<uint8_t>(humanoid::drivers_id_buffer().begin(), humanoid::drivers_id_buffer().end()), SERVO_COUNT);
+    // if (drivers_count != SERVO_COUNT)
+    //     return InitResult::INIT_SETUP_DRIVERS_ERROR;
+
+    // auto r = dynamixel::checkCamera();
+    auto r = orientation::init();
+    if (r)
+        return InitResult::INIT_ORIENT_ERROR;
 
     return InitResult::INIT_SUCC;
 }
@@ -95,23 +106,115 @@ static void thread_main(void const *arg)
             osDelay(50);
         }
     }
-    humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_LEG_LEFT, {RAD2VALUE(M_PI_4), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
-    humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_LEG_RIGHT, {RAD2VALUE(-M_PI_4), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
-    humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HAND_LEFT, {RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
-    humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HAND_RIGHT, {RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
-    humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HEAD, {RAD2VALUE(0), RAD2VALUE(0)});
+    // humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_LEG_LEFT, {RAD2VALUE(M_PI_4), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
+    // humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_LEG_RIGHT, {RAD2VALUE(-M_PI_4), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
+    // humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HAND_LEFT, {RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
+    // humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HAND_RIGHT, {RAD2VALUE(0), RAD2VALUE(0), RAD2VALUE(0)});
+    // humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HEAD, {RAD2VALUE(0), RAD2VALUE(0)});
 
-    dynamixel::syncWrite(humanoid::drivers_id_buffer().data(), humanoid::goal_pos_buffer().data(), SERVO_COUNT, dynamixel::SyncWriteParamType::SYNCWRITE_POSITION);
-    osDelay(5000);
+    // dynamixel::syncWrite(humanoid::drivers_id_buffer().data(), humanoid::goal_pos_buffer().data(), SERVO_COUNT, dynamixel::SyncWriteParamType::SYNCWRITE_POSITION);
+    // osDelay(5000);
     SERIAL_OUT_L_THRSAFE("Init succ");
     for (;;)
     {
         loop();
+        SERIAL_BEGIN
         if (serialEventRun)
             serialEventRun();
+        SERIAL_END
     }
 }
 
+#pragma region ACC get push
+#if 0
+
+orientation::Orient_vector_t acc1;
+orientation::Orient_vector_t acc2;
+
+void loop()
+{
+    delay(ORIENT_UPDATE_PERIOD);
+    orientation::update();
+    orientation::get_acc_vector(acc1);
+    delay(ORIENT_UPDATE_PERIOD);
+    orientation::update();
+    orientation::get_acc_vector(acc2);
+    auto r = orientation::acc_push_recognize(acc1, acc2);
+
+    if (r.lenght() == 0)
+        return;
+    SERIAL_BEGIN
+
+    if (abs(r.x) > 0)
+    {
+        SERIAL_OUT("X: ");
+        SERIAL_OUT(r.x);
+        SERIAL_OUT('\t');
+    }
+    else
+    {
+        SERIAL_OUT("\t\t")
+    }
+    if (abs(r.y) > 0)
+    {
+        SERIAL_OUT("Y: ");
+        SERIAL_OUT(r.y);
+        SERIAL_OUT('\t');
+    }
+    else
+    {
+        SERIAL_OUT("\t\t")
+    }
+    if (abs(r.z) > 0)
+    {
+        SERIAL_OUT("Z: ");
+        SERIAL_OUT(r.z);
+        SERIAL_OUT('\t');
+    }
+    else
+    {
+        SERIAL_OUT("\t\t")
+    }
+    SERIAL_OUT("Forse: ");
+    SERIAL_OUT_L(r.lenght());
+    SERIAL_END;
+}
+
+#endif
+#pragma endregion
+
+#pragma region camera
+#if 0
+
+camera::CumObjectMetadata_t object;
+void loop()
+{
+    dynamixel::readCumRegister(0, object.buffer.data());
+    camera::filter_data(object);
+    SERIAL_BEGIN;
+    SERIAL_OUT(object.metadata_args.type);
+    SERIAL_OUT('\t');
+    SERIAL_OUT(object.metadata_args.cx);
+    SERIAL_OUT('\t');
+    SERIAL_OUT(object.metadata_args.cy);
+    SERIAL_OUT('\t');
+    SERIAL_OUT(object.metadata_args.area);
+    SERIAL_OUT('\t');
+    SERIAL_OUT(object.metadata_args.left);
+    SERIAL_OUT('\t');
+    SERIAL_OUT(object.metadata_args.right);
+    SERIAL_OUT('\t');
+    SERIAL_OUT(object.metadata_args.top);
+    SERIAL_OUT('\t');
+    SERIAL_OUT_L(object.metadata_args.bottom);
+    SERIAL_END;
+    osDelay(500);
+}
+
+#endif
+#pragma endregion
+
+#pragma region hand ik
 #if 0
 
 kinematics::pos_cylindrical_t tpos;
@@ -137,9 +240,13 @@ void loop()
         SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
         int v = strbuf.toInt();
 
-        SERIAL_OUT_L_THRSAFE(tpos.a);
-        SERIAL_OUT_L_THRSAFE(tpos.r);
-        SERIAL_OUT_L_THRSAFE(tpos.z);
+        SERIAL_BEGIN
+        SERIAL_OUT(tpos.a);
+        SERIAL_OUT('\t');
+        SERIAL_OUT(tpos.r);
+        SERIAL_OUT('\t');
+        SERIAL_OUT_L(tpos.z);
+        SERIAL_END
 
         kinematics::IKCalcConfig conf = (kinematics::IKCalcConfig)(kinematics::IKCONF_CHECK_ANGLE_RANGE_EXCEED |
                                                                    kinematics::IKCONF_CHECK_UNREACHABLE_COORDS);
@@ -165,49 +272,49 @@ void loop()
         if (result != kinematics::CalculationResult::CALC_SUCCESSFULL)
             return;
 
+        std::array<double, HAND_DRIVERS_COUNT> pres_pos;
+        std::vector<int32_t> new_values(HAND_DRIVERS_COUNT, 0);
+
+        //========Calc execution time==========
+        time_exec = kinematics::get_motion_time_by_speed(tposlast, tpos, speed_exec);
+        if (time_exec == 0)
+            time_exec = 3;
+        SERIAL_OUT_L_THRSAFE(time_exec);
+
+        //=======Calc drivers velocity in left hand=======
         auto l_range = humanoid::get_limb_range_in_buffers(humanoid::LimbId::LIMB_HAND_LEFT);
         dynamixel::syncReadPosition(humanoid::drivers_id_buffer().data() + l_range.first, (int32_t *)(humanoid::present_pos_buffer().data() + l_range.first), l_range.second);
-        time_exec = kinematics::get_motion_time_by_speed(tposlast, tpos, speed_exec);
 
-        if (time_exec == 0)
-            time_exec = 3;
-        SERIAL_OUT_L_THRSAFE(time_exec);
-        std::vector<int32_t> pres_pos(HAND_DRIVERS_COUNT, 0);
-        humanoid::get_present_pos_of_limb(humanoid::LimbId::LIMB_HAND_LEFT, pres_pos.data());
-        humanoid::set_velocity_to_limb(humanoid::LimbId::LIMB_HAND_LEFT,
-                                       {
-                                           kinematics::calc_joint_velocity_by_time(_out_left[0], VALUE2RAD(pres_pos[0]), time_exec) / 6.0 * 10.0,
-                                           kinematics::calc_joint_velocity_by_time(_out_left[1], VALUE2RAD(pres_pos[1]), time_exec) / 6.0 * 10.0,
-                                           kinematics::calc_joint_velocity_by_time(_out_left[2], VALUE2RAD(pres_pos[2]), time_exec) / 6.0 * 10.0,
-                                       });
+        dynamixel::value_to_rad_arr((int32_t *)(humanoid::present_pos_buffer().data() + l_range.first),
+                                    pres_pos.data(), l_range.second,
+                                    humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_HAND_LEFT),
+                                    humanoid::get_limbs_factor(humanoid::LimbId::LIMB_HAND_LEFT));
+
+        kinematics::calc_joint_velocity_by_time_arr(pres_pos.data(), _out_left.data(), new_values.data(), HAND_DRIVERS_COUNT, time_exec);
+        humanoid::set_velocity_to_limb(humanoid::LimbId::LIMB_HAND_LEFT, new_values);
 
         dynamixel::syncWrite(humanoid::drivers_id_buffer().data() + l_range.first, humanoid::velocity_buffer().data() + l_range.first, l_range.second, dynamixel::SyncWriteParamType::SYNCWRITE_VELOCITY);
 
+        //=======Calc drivers velocity in right hand=======
         l_range = humanoid::get_limb_range_in_buffers(humanoid::LimbId::LIMB_HAND_RIGHT);
         dynamixel::syncReadPosition(humanoid::drivers_id_buffer().data() + l_range.first, (int32_t *)(humanoid::present_pos_buffer().data() + l_range.first), l_range.second);
-        time_exec = kinematics::get_motion_time_by_speed(tposlast, tpos, speed_exec);
 
-        if (time_exec == 0)
-            time_exec = 3;
-        SERIAL_OUT_L_THRSAFE(time_exec);
-        humanoid::get_present_pos_of_limb(humanoid::LimbId::LIMB_HAND_RIGHT, pres_pos.data());
-        humanoid::set_velocity_to_limb(humanoid::LimbId::LIMB_HAND_RIGHT,
-                                       {
-                                           kinematics::calc_joint_velocity_by_time(_out_right[0], VALUE2RAD(pres_pos[0]), time_exec) / 6.0 * 10.0,
-                                           kinematics::calc_joint_velocity_by_time(_out_right[1], VALUE2RAD(pres_pos[1]), time_exec) / 6.0 * 10.0,
-                                           kinematics::calc_joint_velocity_by_time(_out_right[2], VALUE2RAD(pres_pos[2]), time_exec) / 6.0 * 10.0,
-                                       });
+        dynamixel::value_to_rad_arr((int32_t *)(humanoid::present_pos_buffer().data() + l_range.first),
+                                    pres_pos.data(), l_range.second,
+                                    humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_HAND_RIGHT),
+                                    humanoid::get_limbs_factor(humanoid::LimbId::LIMB_HAND_RIGHT));
+
+        kinematics::calc_joint_velocity_by_time_arr(pres_pos.data(), _out_left.data(), new_values.data(), HAND_DRIVERS_COUNT, time_exec);
+        humanoid::set_velocity_to_limb(humanoid::LimbId::LIMB_HAND_RIGHT, new_values);
 
         dynamixel::syncWrite(humanoid::drivers_id_buffer().data() + l_range.first, humanoid::velocity_buffer().data() + l_range.first, l_range.second, dynamixel::SyncWriteParamType::SYNCWRITE_VELOCITY);
 
-        std::vector<int32_t> new_values(HAND_DRIVERS_COUNT, 0);
+        //=========Send to drivers=======
         dynamixel::rad_to_value_arr(_out_left.data(), new_values.data(), new_values.size(), humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_HAND_LEFT), humanoid::get_limbs_factor(humanoid::LimbId::LIMB_HAND_LEFT));
         humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HAND_LEFT, new_values);
 
         dynamixel::rad_to_value_arr(_out_right.data(), new_values.data(), new_values.size(), humanoid::get_offsets_of_limb(humanoid::LimbId::LIMB_HAND_RIGHT), humanoid::get_limbs_factor(humanoid::LimbId::LIMB_HAND_RIGHT));
         humanoid::set_goal_pos_to_limb(humanoid::LimbId::LIMB_HAND_RIGHT, new_values);
-
-        osDelay(5);
 
         dynamixel::syncWrite(humanoid::drivers_id_buffer().data(), humanoid::goal_pos_buffer().data(), SERVO_COUNT, dynamixel::SyncWriteParamType::SYNCWRITE_POSITION);
 
@@ -218,7 +325,10 @@ void loop()
 
 #endif
 
-#if 1
+#pragma endregion
+
+#pragma region legs ik
+#if 0
 kinematics::pos_t tpos;
 kinematics::pos_t tposlast;
 kinematics::leg_t _out_left;
@@ -303,6 +413,19 @@ void loop()
         std::vector<int32_t> new_values(LEG_DRIVERS_COUNT, 0);
         kinematics::calc_joint_velocity_by_time_arr(pres_pos.data(), _out_left.data(), new_values.data(), LEG_DRIVERS_COUNT, time_exec);
         humanoid::set_velocity_to_limb(humanoid::LimbId::LIMB_LEG_LEFT, new_values);
+        SERIAL_BEGIN;
+        SERIAL_OUT(new_values[0]);
+        SERIAL_OUT('\t');
+        SERIAL_OUT(new_values[1]);
+        SERIAL_OUT('\t');
+        SERIAL_OUT(new_values[2]);
+        SERIAL_OUT('\t');
+        SERIAL_OUT(new_values[3]);
+        SERIAL_OUT('\t');
+        SERIAL_OUT(new_values[4]);
+        SERIAL_OUT('\t');
+        SERIAL_OUT_L(new_values[5]);
+        SERIAL_END;
 
         //==Right leg==
         l_range = humanoid::get_limb_range_in_buffers(humanoid::LimbId::LIMB_LEG_RIGHT);
@@ -329,3 +452,4 @@ void loop()
     osDelay(5);
 }
 #endif
+#pragma endregion

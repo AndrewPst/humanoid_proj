@@ -94,3 +94,5 @@ static const double HAND_TIBIA_Z = 115;
 
 #define HEAD_0_DRIVER_ID 19
 #define HEAD_1_DRIVER_ID 20
+
+#define CAM_ID 21

@@ -97,7 +97,7 @@ namespace humanoid
         if (limb <= LimbId::LIMB_HAND_RIGHT)
             return joints_max_values.data() + LEG_DRIVERS_COUNT;
         if (limb == LimbId::LIMB_HEAD)
-            return joints_min_values.data() + LEG_DRIVERS_COUNT + HAND_DRIVERS_COUNT;
+            return joints_max_values.data() + LEG_DRIVERS_COUNT + HAND_DRIVERS_COUNT;
     }
 
     const double *get_offsets_of_limb(LimbId limb)
@@ -107,7 +107,7 @@ namespace humanoid
         if (limb <= LimbId::LIMB_HAND_RIGHT)
             return joints_offsets.data() + LEG_DRIVERS_COUNT;
         if (limb == LimbId::LIMB_HEAD)
-            return joints_min_values.data() + LEG_DRIVERS_COUNT + HAND_DRIVERS_COUNT;
+            return joints_offsets.data() + LEG_DRIVERS_COUNT + HAND_DRIVERS_COUNT;
     }
 
     void humanoid_register_rtos()

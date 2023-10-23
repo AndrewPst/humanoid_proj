@@ -11,7 +11,7 @@ extern osMutexId _s_mutex;
 
 // Thread safe realization of serial out
 #define SERIAL_INIT           \
-    Serial.setTimeout(20);    \
+    Serial.setTimeout(5);    \
     Serial.begin(DEBUG_BOUD); \
     Serial.flush();
 #define SERIAL_OUT(text) \

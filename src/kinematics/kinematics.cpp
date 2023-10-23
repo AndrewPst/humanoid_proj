@@ -245,9 +245,10 @@ namespace kinematics
     uint8_t calc_joint_velocity_by_time_arr(const double *lastpos, const double *new_pos, int32_t *out, uint8_t count, const double time)
     {
         uint8_t i{0};
-        for (uint8_t i; i < count; i++)
+        for (; i < count; i++)
         {
-            out[i] = abs(lastpos[i] - new_pos[0]) * RAD_TO_DEG / time * DEGREES_PER_SEC_2_RPM * DYNAMIXEL_ROTATION_TO_UNIT;
+            out[i] = abs(lastpos[i] - new_pos[i]) * RAD_TO_DEG / time * DEGREES_PER_SEC_2_RPM * DYNAMIXEL_ROTATION_TO_UNIT;
         }
+        return i;
     }
 }
