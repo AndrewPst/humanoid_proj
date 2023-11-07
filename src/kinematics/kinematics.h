@@ -1,5 +1,4 @@
 #pragma once
-
 #include <inttypes.h>
 #include <array>
 #include "../../construction.h"
@@ -47,7 +46,7 @@ namespace kinematics
     struct pos_cylindrical_t
     {
         double a{0}, r{0}, z{0};
-        pos_cylindrical_t(double _a = 0, double _r = 0, double _z = 0) : a(_a), r(_r), z(_r) {}
+        pos_cylindrical_t(double _a = 0, double _r = 0, double _z = 0) : a(_a), r(_r), z(_z) {}
     };
 
     /// @brief set the pointer to min values of servo in leg (in rad) buffer

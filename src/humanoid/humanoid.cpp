@@ -122,7 +122,7 @@ namespace humanoid
         _mut_velocity_buf = osMutexCreate(osMutex(_mut_velocity_buf));
     }
 
-    osStatus lock_goal_pos_buffer_mutex(uint32_t lock_time = portMAX_DELAY)
+    osStatus lock_goal_pos_buffer_mutex(uint32_t lock_time)
     {
         return osMutexWait(_mut_goal_pos_buf, lock_time);
     }
@@ -137,7 +137,7 @@ namespace humanoid
         return drivers_goal_pos_buffer;
     }
 
-    osStatus lock_present_pos_buffer_mutex(uint32_t lock_time = portMAX_DELAY)
+    osStatus lock_present_pos_buffer_mutex(uint32_t lock_time)
     {
         return osMutexWait(_mut_present_pos_buf, lock_time);
     }
@@ -152,7 +152,7 @@ namespace humanoid
         return drivers_present_pos_buffer;
     }
 
-    osStatus lock_velocity_buffer_mutex(uint32_t lock_time = portMAX_DELAY)
+    osStatus lock_velocity_buffer_mutex(uint32_t lock_time)
     {
         return osMutexWait(_mut_velocity_buf, lock_time);
     }

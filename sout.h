@@ -4,7 +4,7 @@
 #include <RTOS.h>
 
 #if DEBUG_LOG == 1
-#define SERIAL_BEGIN osMutexWait(_s_mutex, portMAX_DELAY);
+#define SERIAL_BEGIN osMutexWait(_s_mutex, 0);
 #define SERIAL_END osMutexRelease(_s_mutex);
 
 extern osMutexId _s_mutex;

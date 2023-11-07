@@ -39,21 +39,21 @@ namespace humanoid
 
     // =========Buffers==========
 
-    osStatus lock_goal_pos_buffer_mutex(uint32_t);
+    osStatus lock_goal_pos_buffer_mutex(uint32_t lock_time = portMAX_DELAY);
     osStatus unlock_goal_pos_buffer_mutex();
 
     /// @brief Get array of goal positions (in dynamixel units) of all joints. Use (un)lock_goal_pos_buffer_mutex before read/write to buffer
     /// @return array with structure: [LEG_LEFT[0, 5], LEG_RIGHT[0, 5], HAND_LEFT[0, 2], HAND_RIGHT[0, 2], HEAD[0, 1]]
     const std::array<int32_t, SERVO_COUNT> &goal_pos_buffer();
 
-    osStatus lock_present_pos_buffer_mutex(uint32_t);
+    osStatus lock_present_pos_buffer_mutex(uint32_t lock_time = portMAX_DELAY);
     osStatus unlock_present_pos_buffer_mutex();
 
     /// @brief Get array of present positions (in dynamixel units) of all joints. Use (un)lock_present_pos_buffer_mutex before read/write to buffer
     /// @return array with structure: [LEG_LEFT[0, 5], LEG_RIGHT[0, 5], HAND_LEFT[0, 2], HAND_RIGHT[0, 2], HEAD[0, 1]]
     const std::array<int32_t, SERVO_COUNT> &present_pos_buffer();
 
-    osStatus lock_velocity_buffer_mutex(uint32_t);
+    osStatus lock_velocity_buffer_mutex(uint32_t lock_time = portMAX_DELAY);
     osStatus unlock_velocity_buffer_mutex();
 
     /// @brief Get array of velocity (in dynamixel units) of all joints. Use (un)lock_velocity_buffer_mutex before read/write to buffer
