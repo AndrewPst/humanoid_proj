@@ -66,7 +66,7 @@ namespace kinematics
             max_values_hands_joints = buf;
     }
 
-    CalculationResult legIK(const struct pos_t &pos, leg_t *out, IKCalcConfig config)
+    CalculationResult legIK(const struct pos_dec_t &pos, leg_t *out, IKCalcConfig config)
     {
         leg_t calcbuf;
 
@@ -150,7 +150,7 @@ namespace kinematics
         return CalculationResult::CALC_SUCCESSFULL;
     }
 
-    CalculationResult legFK(const leg_t &in, struct pos_t *out, IKCalcConfig config)
+    CalculationResult legFK(const leg_t &in, struct pos_dec_t *out, IKCalcConfig config)
     {
 
         return CalculationResult::CALC_SUCCESSFULL;
@@ -219,7 +219,7 @@ namespace kinematics
         }
     }
 
-    double get_motion_time_by_speed(const struct pos_t &lastpos, const struct pos_t &newpos, const double speed)
+    double get_motion_time_by_speed(const struct pos_dec_t &lastpos, const struct pos_dec_t &newpos, const double speed)
     {
         if (speed == 0)
             return 0;

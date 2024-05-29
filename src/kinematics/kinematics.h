@@ -35,11 +35,11 @@ namespace kinematics
     using hand_t = std::array<double, HAND_DRIVERS_COUNT>;
 
     /// @brief cartesian coordinate system
-    struct pos_t
+    struct pos_dec_t
     {
         double x{0}, y{0}, z{0};
         double a{0}, b{0}, g{0};
-        pos_t(double _x = 0, double _y = 0, double _z = 0, double _a = 0, double _b = 0, double _g = 0) : x(_x), y(_y), z(_z), a(_a), b(_b), g(_g) {}
+        pos_dec_t(double _x = 0, double _y = 0, double _z = 0, double _a = 0, double _b = 0, double _g = 0) : x(_x), y(_y), z(_z), a(_a), b(_b), g(_g) {}
     };
 
     /// @brief cylindrical coordinate system
@@ -47,6 +47,13 @@ namespace kinematics
     {
         double a{0}, r{0}, z{0};
         pos_cylindrical_t(double _a = 0, double _r = 0, double _z = 0) : a(_a), r(_r), z(_z) {}
+    };
+
+    /// @brief spherical coordinate system
+    struct pos_spherical_t
+    {
+        double a{0}, b{0}, r{0};
+        pos_spherical_t(double _a = 0, double _b = 0, double _r = 0) : a(_a), b(_b), r(_r) {}
     };
 
     /// @brief set the pointer to min values of servo in leg (in rad) buffer
@@ -70,14 +77,14 @@ namespace kinematics
     /// @param out angles of joints in rad
     /// @param config calculation config
     /// @return result of calculation ik
-    CalculationResult legIK(const struct pos_t &pos, leg_t *out, IKCalcConfig config = IKCalcConfig::IKCONF_DEFAULT);
+    CalculationResult legIK(const struct pos_dec_t &pos, leg_t *out, IKCalcConfig config = IKCalcConfig::IKCONF_DEFAULT);
 
     /// @brief EMPTY function. Do not use. TODO: make realization
     /// @param in -
     /// @param out -
     /// @param config -
     /// @return -
-    CalculationResult legFK(const leg_t &in, struct pos_t *out, IKCalcConfig config = IKCalcConfig::IKCONF_DEFAULT);
+    CalculationResult legFK(const leg_t &in, struct pos_dec_t *out, IKCalcConfig config = IKCalcConfig::IKCONF_DEFAULT);
 
     /// @brief calculate inverse kinematics for 3DOF hand
     /// @param pos pos of effector
@@ -98,7 +105,7 @@ namespace kinematics
     /// @param newpos new position of effector
     /// @param speed speed in mm/s OR deg/s (if only rotation)
     /// @return time in sec
-    double get_motion_time_by_speed(const struct pos_t &lastpos, const struct pos_t &newpos, const double speed);
+    double get_motion_time_by_speed(const struct pos_dec_t &lastpos, const struct pos_dec_t &newpos, const double speed);
 
     double get_motion_time_by_speed(const struct pos_cylindrical_t &lastpos, const struct pos_cylindrical_t &newpos, const double speed);
 

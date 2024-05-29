@@ -13,7 +13,7 @@ namespace camera
         struct MetadataNamed_t
         {
             uint8_t type;
-            uint8_t dummy;
+            uint8_t rec_status;
             uint16_t cx;
             uint16_t cy;
             uint16_t area; // было 32
@@ -31,7 +31,11 @@ namespace camera
     void set_cameraDataGetterFunc(const get_camera_data_func &func);
 
     const CumObjectMetadata_t &get_object_by_id(uint8_t id);
-    void filter_data(CumObjectMetadata_t& data);
+    uint8_t get_count_of_objects();
+
+    bool object_recognized(uint8_t id);
+
+    void filter_data(CumObjectMetadata_t &data);
 
     void lock_data_mutex();
     void unlock_data_mutex();

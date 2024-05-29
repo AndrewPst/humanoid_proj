@@ -14,128 +14,191 @@
 
 namespace trajectory
 {
-    template <typename coord_type_T>
-    struct GoalPointer_t
+
+    template <typename _coordT>
+    union Pos_arr_t
     {
+        _coordT pos{0};
+        std::array<double, sizeof(_coordT) / sizeof(double)> arr;
+    };
+
+    template <typename _coordT>
+    Pos_arr_t<_coordT> make_pos_arr(const _coordT &_pos)
+    {
+        Pos_arr_t<_coordT> ret;
+        ret.pos = _pos;
+        return ret;
+    }
+
+    using Pos_dec_arr_t = Pos_arr_t<kinematics::pos_dec_t>;
+    using Pos_cyl_arr_t = Pos_arr_t<kinematics::pos_cylindrical_t>;
+    using Pos_spher_arr_t = Pos_arr_t<kinematics::pos_spherical_t>;
+
+    template <typename _coordT>
+    class MovingArg_t
+    {
+    public:
+        _coordT _goal_pos;
+
+        uint32_t _exec_time{0};
+
+        double _acc_time_share_percent{0};
+        double _brake_time_share_percent{0};
+
+        bool _mirror{false};
+        bool _linear_interpolation{true};
+
+        MovingArg_t()
+        {
+        }
+
+        MovingArg_t(const _coordT &pos, uint32_t exec_time,
+                    double acc, double brake, bool mirror = false,
+                    bool lin_interpolation = true) : _goal_pos(pos),
+                                                     _exec_time(exec_time),
+                                                     _acc_time_share_percent(acc),
+                                                     _brake_time_share_percent(brake),
+                                                     _mirror(mirror),
+                                                     _linear_interpolation(lin_interpolation)
+        {
+        }
+    };
+
+    template <typename _coordT>
+    class MovingArg_thr_save_t
+    {
+    private:
+        MovingArg_t<_coordT> _args;
+
         osMutexDef(_pos_mutex);
         osMutexId(_pos_mutex_id);
 
         osMutexDef(_time_mutex);
         osMutexId(_time_mutex_id);
 
-        std::shared_ptr<coord_type_T> pos;
-        std::shared_ptr<uint32_t> exec_time;
+        osMutexDef(_acc_mutex);
+        osMutexId(_acc_mutex_id);
 
-        GoalPointer_t() : pos(0), exec_time(0)
-        {
-            init_mutexes();
-        }
+        osMutexDef(_brake_mutex);
+        osMutexId(_brake_mutex_id);
 
-        GoalPointer_t(std::shared_ptr<coord_type_T> p, std::shared_ptr<uint32_t> t) : pos(p), exec_time(t)
-        {
-            init_mutexes();
-        }
-
-        void lock_pos_mutex()
-        {
-            osMutexWait(_pos_mutex_id, 0);
-        }
-        void unlock_pos_mutex()
-        {
-            osMutexRelease(_pos_mutex_id);
-            osDelay(1);
-        }
-
-        void lock_time_mutex()
-        {
-            osMutexWait(_time_mutex_id, 0);
-        }
-
-        void unlock_time_mutex()
-        {
-            osMutexRelease(_time_mutex_id);
-            osDelay(1);
-        }
-
-        ~GoalPointer_t()
-        {
-            if (_pos_mutex_id)
-                osMutexDelete(_pos_mutex_id);
-            if (_time_mutex_id)
-                osMutexDelete(_time_mutex_id);
-        }
-
-    private:
         void init_mutexes()
         {
+            // if (!_pos_mutex_id)
             _pos_mutex_id = osMutexCreate(osMutex(_pos_mutex));
-            if (!_pos_mutex_id)
-                SERIAL_OUT_L_THRSAFE("Mut create err");
+            // if (!_time_mutex_id)
             _time_mutex_id = osMutexCreate(osMutex(_time_mutex));
-            if (!_time_mutex_id)
-                SERIAL_OUT_L_THRSAFE("Mut create err");
+            // if (!_acc_mutex_id)
+            _acc_mutex_id = osMutexCreate(osMutex(_acc_mutex));
+            // if (!_brake_mutex_id)
+            _brake_mutex_id = osMutexCreate(osMutex(_brake_mutex));
         }
+
+        friend void trajectory_register_rtos();
+
+    public:
+        MovingArg_thr_save_t()
+        {
+            init_mutexes();
+        }
+
+        _coordT &pos_thr_safe()
+        {
+            osMutexWait(_pos_mutex_id, 0);
+            return _args._goal_pos;
+        }
+        void free_pos_mutex()
+        {
+            osMutexRelease(_pos_mutex_id);
+        }
+
+        double &exec_time_thr_safe()
+        {
+            osMutexWait(_time_mutex_id, 0);
+            return _args._exec_time;
+        }
+        void free_exec_time_mutex()
+        {
+            osMutexRelease(_time_mutex_id);
+        }
+
+        double &acc_thr_safe()
+        {
+            osMutexWait(_acc_mutex_id, 0);
+            return _args._acc_time_share_percent;
+        }
+        void free_acc_mutex()
+        {
+            osMutexRelease(_acc_mutex_id);
+        }
+
+        double &brake_thr_safe()
+        {
+            osMutexWait(_brake_mutex_id, 0);
+            return _args._brake_time_share_percent;
+        }
+        void free_brake_mutex()
+        {
+            osMutexRelease(_brake_mutex_id);
+        }
+        // TODO: create Mutate func
     };
 
-    typedef GoalPointer_t<kinematics::pos_t> GoalPointerLeg_t;
-    typedef GoalPointer_t<kinematics::pos_cylindrical_t> GoalPointerHand_t;
+    enum ExecutionStatus : uint8_t
+    {
+        EXEC_FINISHED_SUCC = 0,
+        EXEC_IN_PROCESS,
+        EXEC_SUSPENDED,
+        EXEC_ERROR_STOPPED
+    };
 
-    typedef std::queue<GoalPointerLeg_t *> TrajectoryLegsTimeline_t;
-    typedef std::queue<GoalPointerHand_t *> TrajectoryHandsTimeline_t;
+    enum ExecutionStep : uint8_t
+    {
+        EXEC_STEP_FINISHED = 0,
+        EXEC_STEP_ACCELERATION,
+        EXEC_STEP_UNIFORM_MOVEMENT,
+        EXEC_STEP_BRAKE,
+        EXEC_STEP_ERROR,
+    };
+
+    using MovingArg_leg_t = MovingArg_t<Pos_dec_arr_t>;
+    using MovingArg_hand_t = MovingArg_t<Pos_cyl_arr_t>;
+
+    using MovingArg_leg_thr_save_t = MovingArg_thr_save_t<Pos_dec_arr_t>;
+    using MovingArg_hand_thr_save_t = MovingArg_thr_save_t<Pos_cyl_arr_t>;
+
+    uint8_t set_new_goal_pos_l_l(const MovingArg_leg_t &pos);
+    uint8_t set_new_goal_pos_l_r(const MovingArg_leg_t &pos);
+    uint8_t set_new_goal_pos_h_l(const MovingArg_hand_t &pos);
+    uint8_t set_new_goal_pos_h_r(const MovingArg_hand_t &pos);
+
+    const MovingArg_leg_t &get_goal_pos_l_l();
+    const MovingArg_leg_t &get_goal_pos_l_r();
+    const MovingArg_hand_t &get_goal_pos_h_l();
+    const MovingArg_hand_t &get_goal_pos_h_r();
+
+    const std::shared_ptr<MovingArg_leg_thr_save_t> &get_current_pos_l_l();
+    const std::shared_ptr<MovingArg_leg_thr_save_t> &get_current_pos_l_r();
+    const std::shared_ptr<MovingArg_hand_thr_save_t> &get_current_pos_h_l();
+    const std::shared_ptr<MovingArg_hand_thr_save_t> &get_current_pos_h_r();
+
+    ExecutionStatus get_moving_status_l_l();
+    ExecutionStatus get_moving_status_l_r();
+    ExecutionStatus get_moving_status_h_l();
+    ExecutionStatus get_moving_status_h_r();
+
+    void move_head(double a, double b);
+
+    void wait_all_executed();
+
+    // set startup positions of limb for correctly moving to first foal position
+    void set_startup_position(const kinematics::pos_dec_t &_l_l_pos,
+                              const kinematics::pos_dec_t &_l_r_pos,
+                              const kinematics::pos_cylindrical_t &_h_l_pos,
+                              const kinematics::pos_cylindrical_t &_h_r_pos);
 
     void trajectory_register_rtos();
 
-    GoalPointerLeg_t &add_goal_point_leg_left(GoalPointerLeg_t &goal);
-    GoalPointerLeg_t &add_goal_point_leg_right(GoalPointerLeg_t &goal);
-    GoalPointerHand_t &add_goal_point_hand_left(GoalPointerHand_t &goal);
-    GoalPointerHand_t &add_goal_point_hand_right(GoalPointerHand_t &goal);
-
-    void clear_leg_left_timeline();
-    void clear_leg_right_timeline();
-    void clear_right_left_timeline();
-    void clear_right_right_timeline();
-    void clear_all_timelines();
-
-    void pause_l_l();
-    void pause_l_r();
-    void pause_h_l();
-    void pause_h_r();
-    void pause_all();
-
-    void resume_l_l();
-    void resume_l_r();
-    void resume_h_l();
-    void resume_h_r();
-    void resume_all();
-
-    void next_l_l();
-    void next_l_r();
-    void next_h_l();
-    void next_h_r();
-    void next_all();
-
-    GoalPointerLeg_t *executable_l_l();
-    GoalPointerLeg_t *executable_l_r();
-    GoalPointerHand_t *executable_h_l();
-    GoalPointerHand_t *executable_h_r();
-
-    GoalPointerLeg_t &current_l_l();
-    GoalPointerLeg_t &current_l_r();
-    GoalPointerHand_t &current_h_l();
-    GoalPointerHand_t &current_h_r();
-
     const std::array<double, SERVO_COUNT> &get_last_rads_buff();
     const std::array<double, SERVO_COUNT> &get_ik_rads_buff();
-
-    bool executed_l_l();
-    bool executed_l_r();
-    bool executed_h_l();
-    bool executed_h_r();
-
-    // void recalc_l_l();
-    // void recalc_l_r();
-    // void recalc_h_l();
-    // void recalc_h_r();
-    // void recalc_all();
-
 }

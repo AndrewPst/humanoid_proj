@@ -6,10 +6,12 @@
 #include "sout.h"
 #include "src/dynamixel_drivers/dynamixel.h"
 #include "src/humanoid/humanoid.h"
-#include "src/lidar/lidar.h"
+// // #include "src/lidar/lidar.h"
 #include "src/camera/camera.h"
 #include "src/orientation/orientation.h"
 #include "src/dynamics/trajectory.h"
+#include "src/motions/motions.h"
+#include "src/brain/brain.h"
 
 #include "construction.h"
 #include "config.h"
@@ -21,133 +23,6 @@
 
 osMutexId _s_mutex{nullptr};
 osThreadId thread_id_main{nullptr};
-
-//--------------Default and startup body position-----------
-const kinematics::pos_t _default_l_l_pos{
-    DEFAULT_LEG_X,
-    -DEFAULT_LEG_LEDGE_Y,
-    DEFAULT_LEG_Z,
-    -DEFAULT_LEG_CONVERGANCE,
-    DEFAULT_LEG_COLLAPSE,
-    DEFAULT_LEG_CASTER,
-};
-const kinematics::pos_t _default_l_r_pos{
-    DEFAULT_LEG_X,
-    DEFAULT_LEG_LEDGE_Y,
-    DEFAULT_LEG_Z,
-    DEFAULT_LEG_CONVERGANCE,
-    DEFAULT_LEG_COLLAPSE,
-    DEFAULT_LEG_CASTER,
-};
-const kinematics::pos_cylindrical_t _default_h_l_pos{
-    DEFAULT_HAND_ANGLE,
-    DEFAULT_HAND_R,
-    DEFAULT_HAND_Z,
-};
-const kinematics::pos_cylindrical_t _default_h_r_pos{
-    DEFAULT_HAND_ANGLE,
-    DEFAULT_HAND_R,
-    DEFAULT_HAND_Z,
-};
-
-const uint8_t ACTIONS_COUNT = 8;
-
-const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_l_time_line_1{
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 20, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 20, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y + 20, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y + 20, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-};
-
-const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_r_time_line_1{
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y - 20, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y - 20, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 20, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 20, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-    std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-};
-// const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_l_time_line_1{
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z + 8, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z - 5, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, -DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z - 5, -DEFAULT_LEG_CONVERGANCE + 4 * DEG_TO_RAD, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, -DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE + 4 * DEG_TO_RAD, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, -DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE + 4 * DEG_TO_RAD, DEFAULT_LEG_COLLAPSE + 10 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, -DEFAULT_LEG_LEDGE_Y - 15, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE + 2 * DEG_TO_RAD, DEFAULT_LEG_COLLAPSE + 8 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-// };
-
-// const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_r_time_line_1{
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y - 10, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE - 10 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 10, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE - 10 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 20, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE - 8 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z + 8, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z - 5, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z - 5, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-// };
-
-// const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_l_time_line_2{
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y + 10, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE + 10 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 10, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE + 10 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 20, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE + 8 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z + 8, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - 30, DEFAULT_LEG_Z - 5, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z - 5, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-// };
-
-// const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_r_time_line_2{
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z + 8, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z - 5, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z - 5, DEFAULT_LEG_CONVERGANCE , DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE , DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, DEFAULT_LEG_LEDGE_Y + 30, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE , DEFAULT_LEG_COLLAPSE - 10 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + 8, DEFAULT_LEG_LEDGE_Y + 15, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE , DEFAULT_LEG_COLLAPSE - 8 * DEG_TO_RAD, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-// };
-
-// const std::array<std::pair<kinematics::pos_cylindrical_t, uint32_t>, ACTIONS_COUNT> _base_h_l_time_line{
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{60 * DEG_TO_RAD, 190, 40}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{60 * DEG_TO_RAD, 190, 40}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{0 * DEG_TO_RAD, 190, 40}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{0 * DEG_TO_RAD, 20, 190}, FORWARD_MOVING_OPER_3},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{0 * DEG_TO_RAD, 20, 190}, FORWARD_MOVING_OPER_4},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{0 * DEG_TO_RAD, 0, 0}, FORWARD_MOVING_OPER_5},
-// };
-
-// const std::array<std::pair<kinematics::pos_cylindrical_t, uint32_t>, ACTIONS_COUNT> _base_h_r_time_line{
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{60 * DEG_TO_RAD, 20, 190}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{60 * DEG_TO_RAD, 20, 190}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{0 * DEG_TO_RAD, 190, 40}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{60 * DEG_TO_RAD, 190, 40}, FORWARD_MOVING_OPER_3},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{60 * DEG_TO_RAD, 190, 40}, FORWARD_MOVING_OPER_4},
-//     std::pair<kinematics::pos_cylindrical_t, uint32_t>{{0 * DEG_TO_RAD, 0, 0}, FORWARD_MOVING_OPER_5},
-// }
-// ;
-// const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_l_time_line{
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y + FORWARD_MOVING_ONE_LEG_Y_INNER, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE + FORWARD_MOVING_ONE_LEG_B, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X - FORWARD_MOVING_STEP_BACKWARD_SIZE, -DEFAULT_LEG_LEDGE_Y + FORWARD_MOVING_ONE_LEG_Y_INNER, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE + FORWARD_MOVING_ONE_LEG_B, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X - FORWARD_MOVING_STEP_BACKWARD_SIZE, -DEFAULT_LEG_LEDGE_Y + FORWARD_MOVING_ONE_LEG_Y_INNER, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X - FORWARD_MOVING_STEP_BACKWARD_SIZE - FORWARD_MOVING_STEP_FORWARD_SIZE, -DEFAULT_LEG_LEDGE_Y - FORWARD_MOVING_ONE_LEG_Y_OUTER, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_3},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X - FORWARD_MOVING_STEP_BACKWARD_SIZE - FORWARD_MOVING_STEP_FORWARD_SIZE, -DEFAULT_LEG_LEDGE_Y - FORWARD_MOVING_ONE_LEG_Y_OUTER, DEFAULT_LEG_Z - FORWARD_MOVING_STEP_HEIGHT_START, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_4},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y - FORWARD_MOVING_ONE_LEG_Y_OUTER, DEFAULT_LEG_Z - FORWARD_MOVING_STEP_HEIGHT_END, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_5},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, -DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, -DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_6}};
-
-// const std::array<std::pair<kinematics::pos_t, uint32_t>, ACTIONS_COUNT> _base_l_r_time_line{
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y + FORWARD_MOVING_ONE_LEG_Y_OUTER, DEFAULT_LEG_Z - FORWARD_MOVING_STEP_HEIGHT_START, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_0},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + FORWARD_MOVING_STEP_FORWARD_SIZE, DEFAULT_LEG_LEDGE_Y + FORWARD_MOVING_ONE_LEG_Y_OUTER, DEFAULT_LEG_Z - FORWARD_MOVING_STEP_HEIGHT_END, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_1},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X + FORWARD_MOVING_STEP_FORWARD_SIZE, DEFAULT_LEG_LEDGE_Y + FORWARD_MOVING_ONE_LEG_Y_OUTER, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_2},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y - FORWARD_MOVING_ONE_LEG_Y_INNER, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_3},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y - FORWARD_MOVING_ONE_LEG_Y_INNER, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE - FORWARD_MOVING_ONE_LEG_B, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_4},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y - FORWARD_MOVING_ONE_LEG_Y_INNER, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE - FORWARD_MOVING_ONE_LEG_B, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_5},
-//     std::pair<kinematics::pos_t, uint32_t>{{DEFAULT_LEG_X, DEFAULT_LEG_LEDGE_Y, DEFAULT_LEG_Z, DEFAULT_LEG_CONVERGANCE, DEFAULT_LEG_COLLAPSE, DEFAULT_LEG_CASTER}, FORWARD_MOVING_OPER_6}};
 
 enum InitResult : uint8_t
 {
@@ -172,30 +47,23 @@ void main_register_rtos()
     thread_id_main = osThreadCreate(osThread(thread_id_main), NULL);
 }
 
-std::shared_ptr<trajectory::GoalPointerLeg_t> _l_l_pointer;
-std::shared_ptr<trajectory::GoalPointerLeg_t> _l_r_pointer;
-std::shared_ptr<trajectory::GoalPointerHand_t> _h_l_pointer;
-std::shared_ptr<trajectory::GoalPointerHand_t> _h_r_pointer;
-
 void setup()
 {
     //  Register tasks
     main_register_rtos();
 
+    // in main_register_rtos created mutexes for uart
     SERIAL_BEGIN
     SERIAL_INIT
     SERIAL_END
 
     humanoid::humanoid_register_rtos();
-    // camera::camera_register_rtos();
-    // orientation::register_rtos();
+
+    camera::set_cameraDataGetterFunc(dynamixel::readCumRegister);
+    camera::camera_register_rtos();
+    orientation::register_rtos();
     dynamixel::dynamixel_register_rtos();
     trajectory::trajectory_register_rtos();
-
-    _l_l_pointer = std::make_shared<trajectory::GoalPointerLeg_t>(std::make_shared<kinematics::pos_t>(), std::make_shared<uint32_t>());
-    _l_r_pointer = std::make_shared<trajectory::GoalPointerLeg_t>(std::make_shared<kinematics::pos_t>(), std::make_shared<uint32_t>());
-    _h_l_pointer = std::make_shared<trajectory::GoalPointerHand_t>(std::make_shared<kinematics::pos_cylindrical_t>(), std::make_shared<uint32_t>());
-    _h_r_pointer = std::make_shared<trajectory::GoalPointerHand_t>(std::make_shared<kinematics::pos_cylindrical_t>(), std::make_shared<uint32_t>());
 
     // start kernel
     osKernelStart();
@@ -207,10 +75,8 @@ InitResult initsystem()
     kinematics::set_min_values_legs_joints(humanoid::get_min_angles_of_limb(humanoid::LimbId::LIMB_LEG_LEFT));
     kinematics::set_min_values_hands_joints(humanoid::get_min_angles_of_limb(humanoid::LimbId::LIMB_HAND_LEFT));
     kinematics::set_max_values_hands_joints(humanoid::get_max_angles_of_limb(humanoid::LimbId::LIMB_HAND_LEFT));
-    *(trajectory::current_l_l().pos) = _default_l_l_pos;
-    *(trajectory::current_l_r().pos) = _default_l_r_pos;
-    *(trajectory::current_h_l().pos) = _default_h_l_pos;
-    *(trajectory::current_h_r().pos) = _default_h_r_pos;
+
+    trajectory::set_startup_position(_default_l_l_pos, _default_l_r_pos, _default_h_l_pos, _default_h_r_pos);
 
     if (dynamixel::init(dynamixel::Dynamixel_config_t()) != 0)
         return InitResult::INIT_DYNAMIXEL_DRIVER_ERROR;
@@ -233,13 +99,17 @@ InitResult initsystem()
     if (drivers_count != SERVO_COUNT)
         return InitResult::INIT_SETUP_DRIVERS_ERROR;
 
-    // auto r = dynamixel::checkCamera();
-    // if (r)
-    //     return InitResult::INIT_CAMERA_NOT_FOUND_ERROR;
+    while (dynamixel::checkCamera())
+    {
+        osDelay(1000);
+    }
+    auto r = dynamixel::checkCamera();
+    if (r)
+        return InitResult::INIT_CAMERA_NOT_FOUND_ERROR;
 
-    // r = orientation::init();
-    // if (r)
-    //     return InitResult::INIT_ORIENT_ERROR;
+    r = orientation::init();
+    if (r)
+        return InitResult::INIT_ORIENT_ERROR;
 
     return InitResult::INIT_SUCC;
 }
@@ -368,132 +238,12 @@ static void thread_main(void const *arg)
     }
     SERIAL_OUT_L_THRSAFE("[SYSTEM] Init succ!");
 
+    // waiting for the starting point to be reached
     take_start_pos();
+    osDelay(5000);
 
-    osDelay(2500);
-    for (;;)
-    {
-        loop();
-        SERIAL_BEGIN
-        if (serialEventRun)
-            serialEventRun();
-        SERIAL_END
-    }
+    brain::main();
 }
-
-#if 1
-
-uint8_t _i{0};
-double speed_exec = 60; // mm/sec
-
-uint8_t temp = 0;
-
-void loop()
-{
-    // bool avail{false};
-    // SERIAL_AVAIABLE_THRSAFE(avail);
-    // if (avail && !trajectory::executable_l_l())
-    // {
-    //     //=======Read serial=========
-    //     String strbuf;
-    //     SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
-    //     _l_l_pointer->pos->x = _l_r_pointer->pos->x = strbuf.toFloat();
-    //     SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
-    //     _l_l_pointer->pos->y = _l_r_pointer->pos->y = strbuf.toFloat();
-    //     SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
-    //     _l_l_pointer->pos->z = _l_r_pointer->pos->z = strbuf.toFloat();
-    //     SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
-    //     _l_l_pointer->pos->a = _l_r_pointer->pos->a = strbuf.toFloat() * DEG_TO_RAD;
-    //     SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
-    //     _l_l_pointer->pos->b = _l_r_pointer->pos->b = strbuf.toFloat() * DEG_TO_RAD;
-    //     SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
-    //     _l_l_pointer->pos->g = _l_r_pointer->pos->g = strbuf.toFloat() * DEG_TO_RAD;
-    //     SERIAL_READ_STRING_UNTIL_THREAD_SAVE(strbuf, '/');
-
-    //     speed_exec = strbuf.toFloat();
-
-    //     *(_l_l_pointer->exec_time) = kinematics::get_motion_time_by_speed(*(trajectory::current_l_l().pos), *(_l_l_pointer->pos), speed_exec) * 1000.0;
-    //     //*(_l_r_pointer->exec_time) = kinematics::get_motion_time_by_speed(*(trajectory::current_l_r().pos), *(_l_r_pointer->pos), speed_exec) * 1000;
-
-    //     SERIAL_OUT_L_THRSAFE(*(_l_l_pointer->exec_time));
-
-    //     trajectory::add_goal_point_leg_left(*(_l_l_pointer));
-    //     // trajectory::add_goal_point_leg_right(*(_l_r_pointer));
-    // }
-    // osDelay(5);
-    //=======Read serial=========
-
-    *(_l_l_pointer->pos) = _base_l_l_time_line_1[_i].first;
-    *(_l_l_pointer->exec_time) = _base_l_l_time_line_1[_i].second;
-
-    *(_l_r_pointer->pos) = _base_l_r_time_line_1[_i].first;
-    *(_l_r_pointer->exec_time) = _base_l_r_time_line_1[_i].second;
-
-    // *(_h_l_pointer->pos) = _base_h_l_time_line[_i].first;
-    // *(_h_l_pointer->exec_time) = _base_h_l_time_line[_i].second;
-
-    // *(_h_r_pointer->pos) = _base_h_r_time_line[_i].first;
-    // *(_h_r_pointer->exec_time) = _base_h_r_time_line[_i].second;
-
-    trajectory::add_goal_point_leg_left(*(_l_l_pointer));
-    trajectory::add_goal_point_leg_right(*(_l_r_pointer));
-    // trajectory::add_goal_point_hand_left(*(_h_l_pointer));
-    // trajectory::add_goal_point_hand_right(*(_h_r_pointer));
-    // SERIAL_BEGIN;
-
-    // SERIAL_OUT(_i)
-    // SERIAL_OUT_L(":\t")
-
-    // SERIAL_OUT_L(_base_l_l_time_line[_i].second);
-    // SERIAL_OUT_L(_base_l_l_time_line[_i].first.x);
-    // SERIAL_OUT('\t');
-    // SERIAL_OUT_L(_base_l_r_time_line[_i].first.x);
-
-    // SERIAL_OUT_L(_base_l_l_time_line[_i].first.y);
-    // SERIAL_OUT('\t');
-    // SERIAL_OUT_L(_base_l_r_time_line[_i].first.y);
-
-    // SERIAL_OUT_L(_base_l_l_time_line[_i].first.z);
-    // SERIAL_OUT('\t');
-    // SERIAL_OUT_L(_base_l_r_time_line[_i].first.z);
-
-    // SERIAL_OUT_L(_base_l_l_time_line[_i].first.a);
-    // SERIAL_OUT('\t');
-    // SERIAL_OUT_L(_base_l_r_time_line[_i].first.a);
-
-    // SERIAL_OUT_L(_base_l_l_time_line[_i].first.b);
-    // SERIAL_OUT('\t');
-    // SERIAL_OUT_L(_base_l_r_time_line[_i].first.b);
-
-    // SERIAL_OUT_L(_base_l_l_time_line[_i].first.g);
-    // SERIAL_OUT('\t');
-    // SERIAL_OUT_L(_base_l_r_time_line[_i].first.g);
-
-    // auto result = kinematics::legIK(_base_l_l_time_line[_i].first, nullptr, (kinematics::IKCalcConfig)(kinematics::IKCONF_CHECK_ANGLE_RANGE_EXCEED | kinematics::IKCONF_CHECK_UNREACHABLE_COORDS));
-    // SERIAL_OUT("Left IK result: ")
-    // SERIAL_OUT_L(result);
-
-    // result = kinematics::legIK(_base_l_r_time_line[_i].first, nullptr, (kinematics::IKCalcConfig)(kinematics::IKCONF_CHECK_ANGLE_RANGE_EXCEED | kinematics::IKCONF_CHECK_UNREACHABLE_COORDS | kinematics::IKCONFIG_MIRROR_OUT));
-    // SERIAL_OUT("Right IK result: ")
-    // SERIAL_OUT_L(result);
-
-    // SERIAL_OUT_L("==================");
-    // SERIAL_END;
-    // SERIAL_OUT_L_THRSAFE("Sended");
-    while (trajectory::executed_l_l() || trajectory::executed_l_r() || trajectory::executed_h_l() || trajectory::executed_h_r())
-    {
-        osDelay(5);
-    }
-    _i++;
-    if (_i >= ACTIONS_COUNT)
-    {
-        _i = 0;
-    }
-    // SERIAL_OUT_L_THRSAFE("Is null");
-    // SERIAL_OUT_L_THRSAFE("Add next");
-}
-
-#endif
 
 #pragma region hands ik new
 #if 0
@@ -801,8 +551,8 @@ void loop()
 
 #pragma region legs ik
 #if 0
-kinematics::pos_t tpos;
-kinematics::pos_t tposlast;
+kinematics::pos_dec_t tpos;
+kinematics::pos_dec_t tposlast;
 kinematics::leg_t _out_left;
 kinematics::leg_t _out_right;
 double time_exec = 2;         // sec
